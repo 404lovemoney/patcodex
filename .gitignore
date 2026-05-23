@@ -11,6 +11,7 @@ node_modules/
 .pnpm-store/
 
 # Build and tool output
+.next/
 dist/
 build/
 .cache/
@@ -29,3 +30,6 @@ pnpm-debug.log*
 .env
 .env.*
 !.env.example
+
+# Local Netlify folder
+.netlify
