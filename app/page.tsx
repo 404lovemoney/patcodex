@@ -29,10 +29,27 @@ const slides = [
   },
 ];
 
+const getTodayDateValue = () => {
+  const today = new Date();
+  const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60_000);
+
+  return localDate.toISOString().slice(0, 10);
+};
+
+const getCurrentTimeValue = () => {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+
+  return `${hours}:${minutes}`;
+};
+
 export default function Home() {
   const [active, setActive] = useState(0);
   const [bookingStatus, setBookingStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [bookingMessage, setBookingMessage] = useState("");
+  const [defaultAppointmentDate] = useState(getTodayDateValue);
+  const [defaultAppointmentTime] = useState(getCurrentTimeValue);
 
   const showSlide = (index: number) => {
     setActive((index + slides.length) % slides.length);
@@ -180,7 +197,7 @@ export default function Home() {
         <section className="environment" id="environment" aria-label="店内环境">
           <div className="section-inner">
             <div className="section-head">
-              <h2>西湖店环境</h2>
+              <h2>店内环境</h2>
               <p>以中式雅致、温润木石和西湖意境打造接待、洗护、造型休息三类空间，让宠物和主人都能放松停留。</p>
             </div>
             <div className="environment-carousel">
@@ -380,11 +397,11 @@ export default function Home() {
               </div>
               <div className="field">
                 <label htmlFor="appointmentDate">期望日期</label>
-                <input id="appointmentDate" name="appointmentDate" type="date" />
+                <input id="appointmentDate" name="appointmentDate" type="date" defaultValue={defaultAppointmentDate} />
               </div>
               <div className="field">
                 <label htmlFor="appointmentTime">期望时间</label>
-                <input id="appointmentTime" name="appointmentTime" type="time" />
+                <input id="appointmentTime" name="appointmentTime" type="time" defaultValue={defaultAppointmentTime} />
               </div>
               <div className="field full">
                 <label htmlFor="message">宠物情况</label>
