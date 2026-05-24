@@ -412,37 +412,19 @@ export default function Home() {
                 </div>
                 <a
                   className="btn secondary"
-                  href="https://uri.amap.com/search?keyword=%E4%B8%8A%E6%B5%B7%E5%B8%82%E5%AE%9C%E5%B7%9D%E8%B7%AF%E8%A1%97%E9%81%93%E9%99%95%E8%A5%BF%E5%8C%97%E8%B7%AF1620%E5%8F%B7"
+                  href="https://uri.amap.com/marker?markers=121.4396,31.2449,%E6%B2%90%E7%BB%92%20Pet%20Spa%EF%BC%88%E9%99%95%E8%A5%BF%E5%8C%97%E8%B7%AF1620%E5%8F%B7%EF%BC%89&src=murong-pet-care&callnative=1"
                   target="_blank"
                   rel="noopener"
                 >
-                  打开地图导航
+                  打开高德地图
                 </a>
               </div>
-              <div className="illustrated-map" role="img" aria-label="可爱清爽风格地图，标记沐绒宠物洗护位于陕西北路 1620 号">
-                <div className="map-road soft" aria-hidden="true" />
-                <div className="map-road main" aria-hidden="true" />
-                <div className="map-road cross" aria-hidden="true" />
-                <span className="road-label shanxi">陕西北路</span>
-                <span className="road-label yichuan">宜川路街道</span>
-                <div className="map-landmark park" data-icon="✦">
-                  宠物友好
-                  <br />
-                  街区
-                </div>
-                <div className="map-landmark metro" data-icon="M">
-                  附近交通
-                </div>
-                <div className="map-landmark cafe" data-icon="♡">
-                  等候休息
-                </div>
-                <div className="map-pin">
-                  <span>
-                    <b>🐾</b>沐绒
-                    <br />
-                    宠物洗护
-                  </span>
-                </div>
+              <div className="illustrated-map location-map-frame">
+                <img
+                  className="location-map-image"
+                  src="/assets/pet-spa-location-map.png"
+                  alt="清新可爱的沐绒 Pet Spa 来店地图，门店位于长寿健康主题公园北侧、陕西北路附近"
+                />
               </div>
             </div>
           </div>
