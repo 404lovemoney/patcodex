@@ -50,6 +50,7 @@ export default function Home() {
   const [bookingMessage, setBookingMessage] = useState("");
   const [defaultAppointmentDate] = useState(getTodayDateValue);
   const [defaultAppointmentTime] = useState(getCurrentTimeValue);
+  const [isMapPreviewOpen, setIsMapPreviewOpen] = useState(false);
 
   const showSlide = (index: number) => {
     setActive((index + slides.length) % slides.length);
@@ -62,6 +63,22 @@ export default function Home() {
 
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!isMapPreviewOpen) {
+      return;
+    }
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMapPreviewOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [isMapPreviewOpen]);
 
   const submitBooking = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -437,16 +454,35 @@ export default function Home() {
                 </a>
               </div>
               <div className="illustrated-map location-map-frame">
+                <button
+                  className="location-map-trigger"
+                  type="button"
+                  onClick={() => setIsMapPreviewOpen(true)}
+                  aria-label="放大查看沐绒 Pet Spa 来店地图"
+                >
                 <img
                   className="location-map-image"
                   src="/assets/pet-spa-location-map.png"
                   alt="清新可爱的沐绒 Pet Spa 来店地图，门店位于长寿健康主题公园北侧、陕西北路附近"
                 />
+                </button>
               </div>
             </div>
           </div>
         </section>
       </main>
+
+      {isMapPreviewOpen ? (
+        <div className="map-lightbox" role="dialog" aria-modal="true" aria-label="沐绒 Pet Spa 来店地图大图">
+          <button className="map-lightbox-backdrop" type="button" onClick={() => setIsMapPreviewOpen(false)} aria-label="关闭地图大图" />
+          <figure className="map-lightbox-panel">
+            <button className="map-lightbox-close" type="button" onClick={() => setIsMapPreviewOpen(false)} aria-label="关闭地图大图">
+              ×
+            </button>
+            <img src="/assets/pet-spa-location-map.png" alt="清新可爱的沐绒 Pet Spa 来店地图大图" />
+          </figure>
+        </div>
+      ) : null}
 
       <footer className="site-footer">
         <div className="footer-inner">
