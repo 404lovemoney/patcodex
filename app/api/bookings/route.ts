@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Pool } from "pg";
+import { getDatabase } from "@netlify/database";
 
 export const runtime = "nodejs";
 
@@ -13,28 +13,6 @@ type BookingPayload = {
   appointmentTime?: string;
   message?: string;
 };
-
-let pool: Pool | undefined;
-
-function getPool() {
-  const connectionString = process.env.SESSION_DATABASE_URL;
-
-  if (!connectionString) {
-    throw new Error("SESSION_DATABASE_URL is not configured");
-  }
-
-  pool ??= new Pool({
-    connectionString,
-    max: 5,
-    connectionTimeoutMillis: 5000,
-    idleTimeoutMillis: 30000,
-    ssl: {
-      rejectUnauthorized: false,
-    },
-  });
-
-  return pool;
-}
 
 function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -101,8 +79,9 @@ export async function POST(request: Request) {
   };
 
   try {
-    const result = await getPool().query<{ id: string }>(
-      `insert into public.appointment_bookings (
+    const db = getDatabase();
+    const [booking] = await db.sql<{ id: string }>`
+      insert into appointment_bookings (
         customer_name,
         phone,
         email,
@@ -112,22 +91,21 @@ export async function POST(request: Request) {
         service_type,
         notes,
         form_payload
-      ) values ($1, $2, nullif($3, ''), nullif($4, ''), $5::date, $6::time, nullif($7, ''), nullif($8, ''), $9::jsonb)
-      returning id`,
-      [
-        name,
-        phone,
-        email,
-        pet,
-        parsedDate,
-        parsedTime,
-        service,
-        message,
-        JSON.stringify(formPayload),
-      ],
-    );
+      ) values (
+        ${name},
+        ${phone},
+        nullif(${email}, ''),
+        nullif(${pet}, ''),
+        ${parsedDate}::date,
+        ${parsedTime}::time,
+        nullif(${service}, ''),
+        nullif(${message}, ''),
+        ${JSON.stringify(formPayload)}::jsonb
+      )
+      returning id
+    `;
 
-    return NextResponse.json({ id: result.rows[0].id });
+    return NextResponse.json({ id: booking.id });
   } catch (error) {
     console.error("Failed to create booking", error);
     return NextResponse.json({ error: "预约提交失败，请稍后再试" }, { status: 500 });

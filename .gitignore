@@ -18,6 +18,7 @@ build/
 .parcel-cache/
 .vite/
 coverage/
+tsconfig.tsbuildinfo
 
 # Logs
 *.log
