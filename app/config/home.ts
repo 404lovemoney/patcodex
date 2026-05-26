@@ -126,11 +126,6 @@ export const contactInfo = {
   ],
 };
 
-export const bookingOptions = {
-  petTypes: ["小型犬", "中大型犬", "猫咪", "其他宠物"],
-  services: ["精致全护", "轻盈洗护", "造型养护", "到店评估"],
-};
-
 export const storeMap = {
   title: "陕西北路 1620 号，带毛孩子来这里。",
   copy: "清爽薄荷色的手绘地图标出了门店所在位置，到店前可直接打开地图搜索导航。",

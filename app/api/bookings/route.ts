@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { notifyBookingSubmitted } from "../../lib/booking-notifications";
 import { getPool } from "../../lib/db";
+import { checkBookingRateLimit, normalizeBookingPayload } from "../../lib/booking-validation";
 
 export const runtime = "nodejs";
 
@@ -12,71 +14,41 @@ type BookingPayload = {
   appointmentDate?: string;
   appointmentTime?: string;
   message?: string;
+  website?: string;
 };
 
-function cleanText(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function parseOptionalDate(value: string) {
-  if (!value) {
-    return null;
-  }
-
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined;
-}
-
-function parseOptionalTime(value: string) {
-  if (!value) {
-    return null;
-  }
-
-  return /^\d{2}:\d{2}$/.test(value) ? value : undefined;
-}
+const isBookingPayload = (value: unknown): value is BookingPayload =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 export async function POST(request: Request) {
   let payload: BookingPayload;
 
   try {
-    payload = await request.json();
+    const json = await request.json();
+    if (!isBookingPayload(json)) {
+      return NextResponse.json({ error: "预约信息格式不正确" }, { status: 400 });
+    }
+
+    payload = json;
   } catch {
     return NextResponse.json({ error: "预约信息格式不正确" }, { status: 400 });
   }
 
-  const name = cleanText(payload.name);
-  const phone = cleanText(payload.phone);
-  const email = cleanText(payload.email);
-  const pet = cleanText(payload.pet);
-  const service = cleanText(payload.service);
-  const appointmentDate = cleanText(payload.appointmentDate);
-  const appointmentTime = cleanText(payload.appointmentTime);
-  const message = cleanText(payload.message);
-  const parsedDate = parseOptionalDate(appointmentDate);
-  const parsedTime = parseOptionalTime(appointmentTime);
-
-  if (!name || !phone) {
-    return NextResponse.json({ error: "请填写您的称呼和联系电话" }, { status: 400 });
+  if (!checkBookingRateLimit(request)) {
+    return NextResponse.json({ error: "提交太频繁，请稍后再试" }, { status: 429 });
   }
 
-  if (phone.length < 6 || phone.length > 32) {
-    return NextResponse.json({ error: "联系电话格式不正确" }, { status: 400 });
+  const normalized = normalizeBookingPayload(payload);
+
+  if (normalized.kind === "honeypot") {
+    return NextResponse.json({ ok: true });
   }
 
-  if (parsedDate === undefined || parsedTime === undefined) {
-    return NextResponse.json({ error: "预约日期或时间格式不正确" }, { status: 400 });
+  if (normalized.kind === "error") {
+    return NextResponse.json({ error: normalized.message }, { status: 400 });
   }
 
-  const formPayload = {
-    ...payload,
-    name,
-    phone,
-    email,
-    pet,
-    service,
-    appointmentDate,
-    appointmentTime,
-    message,
-  };
+  const { booking, formPayload } = normalized;
 
   try {
     const db = await getPool();
@@ -94,19 +66,26 @@ export async function POST(request: Request) {
       ) values ($1, $2, nullif($3, ''), nullif($4, ''), $5::date, $6::time, nullif($7, ''), nullif($8, ''), $9::jsonb)
       returning id`,
       [
-        name,
-        phone,
-        email,
-        pet,
-        parsedDate,
-        parsedTime,
-        service,
-        message,
+        booking.name,
+        booking.phone,
+        booking.email,
+        booking.pet,
+        booking.appointmentDate,
+        booking.appointmentTime,
+        booking.service,
+        booking.message,
         JSON.stringify(formPayload),
       ],
     );
 
-    return NextResponse.json({ id: result.rows[0].id });
+    const id = result.rows[0].id;
+
+    await notifyBookingSubmitted({
+      id,
+      ...booking,
+    });
+
+    return NextResponse.json({ id });
   } catch (error) {
     console.error("Failed to create booking", error);
     return NextResponse.json({ error: "预约提交失败，请稍后再试" }, { status: 500 });

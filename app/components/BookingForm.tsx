@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { bookingOptions } from "../config/home";
+import { bookingLimits, bookingOptions, businessHours } from "../config/bookings";
 import { submitBookingRequest } from "../lib/bookings";
 import { getCurrentTimeValue, getTodayDateValue } from "../lib/date-time";
 
@@ -9,7 +9,13 @@ export function BookingForm() {
   const [bookingStatus, setBookingStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [bookingMessage, setBookingMessage] = useState("");
   const [defaultAppointmentDate] = useState(getTodayDateValue);
-  const [defaultAppointmentTime] = useState(getCurrentTimeValue);
+  const [defaultAppointmentTime] = useState(() => {
+    const currentTime = getCurrentTimeValue();
+
+    return currentTime >= businessHours.opensAt && currentTime <= businessHours.closesAt
+      ? currentTime
+      : businessHours.opensAt;
+  });
 
   const submitBooking = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -33,17 +39,25 @@ export function BookingForm() {
 
   return (
     <form className="booking-form" onSubmit={submitBooking}>
+      <input
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        className="honeypot-field"
+      />
       <div className="field">
         <label htmlFor="name">您的称呼</label>
-        <input id="name" name="name" type="text" placeholder="例如：林小姐" required />
+        <input id="name" name="name" type="text" placeholder="例如：林小姐" maxLength={bookingLimits.name} required />
       </div>
       <div className="field">
         <label htmlFor="phone">联系电话</label>
-        <input id="phone" name="phone" type="tel" placeholder="用于确认预约" required />
+        <input id="phone" name="phone" type="tel" placeholder="用于确认预约" maxLength={bookingLimits.phone} required />
       </div>
       <div className="field">
         <label htmlFor="email">电子邮箱</label>
-        <input id="email" name="email" type="email" placeholder="可选，用于接收确认信息" />
+        <input id="email" name="email" type="email" placeholder="可选，用于接收确认信息" maxLength={bookingLimits.email} />
       </div>
       <div className="field">
         <label htmlFor="pet">宠物类型</label>
@@ -63,15 +77,35 @@ export function BookingForm() {
       </div>
       <div className="field">
         <label htmlFor="appointmentDate">期望日期</label>
-        <input id="appointmentDate" name="appointmentDate" type="date" defaultValue={defaultAppointmentDate} />
+        <input
+          id="appointmentDate"
+          name="appointmentDate"
+          type="date"
+          defaultValue={defaultAppointmentDate}
+          min={defaultAppointmentDate}
+          required
+        />
       </div>
       <div className="field">
         <label htmlFor="appointmentTime">期望时间</label>
-        <input id="appointmentTime" name="appointmentTime" type="time" defaultValue={defaultAppointmentTime} />
+        <input
+          id="appointmentTime"
+          name="appointmentTime"
+          type="time"
+          defaultValue={defaultAppointmentTime}
+          min={businessHours.opensAt}
+          max={businessHours.closesAt}
+          required
+        />
       </div>
       <div className="field full">
         <label htmlFor="message">宠物情况</label>
-        <textarea id="message" name="message" placeholder="例如：泰迪，5kg，有轻微打结，比较怕吹风" />
+        <textarea
+          id="message"
+          name="message"
+          placeholder="例如：泰迪，5kg，有轻微打结，比较怕吹风"
+          maxLength={bookingLimits.message}
+        />
       </div>
       <div className="field full">
         <button className="btn secondary" type="submit" disabled={bookingStatus === "submitting"}>

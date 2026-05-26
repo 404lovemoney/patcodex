@@ -13,6 +13,7 @@ export const submitBookingRequest = async (formData: FormData) => {
       appointmentDate: formData.get("appointmentDate"),
       appointmentTime: formData.get("appointmentTime"),
       message: formData.get("message"),
+      website: formData.get("website"),
     }),
   });
 
