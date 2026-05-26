@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import type { ReactNode } from "react";
+import { THEME_STORAGE_KEY } from "./lib/theme";
 import "./globals.css";
 
 const themeInitScript = `
 (function () {
   try {
-    var storageKey = "murong-theme-mode";
+    var storageKey = ${JSON.stringify(THEME_STORAGE_KEY)};
     var savedMode = window.localStorage.getItem(storageKey);
     var mode = savedMode === "light" || savedMode === "dark" || savedMode === "system" ? savedMode : "system";
     var systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
