@@ -1,6 +1,27 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import Image from "next/image";
+import { FormEvent, useEffect, useRef, useState } from "react";
+
+type ThemeMode = "light" | "dark" | "system";
+
+const THEME_STORAGE_KEY = "murong-theme-mode";
+
+const themeOptions: Array<{ label: string; mode: ThemeMode }> = [
+  { label: "亮色", mode: "light" },
+  { label: "暗色", mode: "dark" },
+  { label: "系统", mode: "system" },
+];
+
+const isThemeMode = (value: string | null): value is ThemeMode =>
+  value === "light" || value === "dark" || value === "system";
+
+const getSystemTheme = () =>
+  window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+
+const applyTheme = (mode: ThemeMode) => {
+  document.documentElement.dataset.theme = mode === "system" ? getSystemTheme() : mode;
+};
 
 const slides = [
   {
@@ -51,6 +72,13 @@ export default function Home() {
   const [defaultAppointmentDate] = useState(getTodayDateValue);
   const [defaultAppointmentTime] = useState(getCurrentTimeValue);
   const [isMapPreviewOpen, setIsMapPreviewOpen] = useState(false);
+  const [themeMode, setThemeMode] = useState<ThemeMode>("system");
+  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+  const [hasThemeHydrated, setHasThemeHydrated] = useState(false);
+  const themeMenuRef = useRef<HTMLDivElement>(null);
+
+  const currentThemeLabel = themeOptions.find((option) => option.mode === themeMode)?.label ?? "系统";
+  const nextSlideIndex = (active + 1) % slides.length;
 
   const showSlide = (index: number) => {
     setActive((index + slides.length) % slides.length);
@@ -63,6 +91,51 @@ export default function Home() {
 
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    const nextMode = isThemeMode(storedTheme) ? storedTheme : "system";
+    setThemeMode(nextMode);
+    setHasThemeHydrated(true);
+    applyTheme(nextMode);
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const syncSystemTheme = () => {
+      const savedMode = window.localStorage.getItem(THEME_STORAGE_KEY);
+      if (!savedMode || savedMode === "system") {
+        applyTheme("system");
+      }
+    };
+
+    mediaQuery.addEventListener("change", syncSystemTheme);
+
+    return () => mediaQuery.removeEventListener("change", syncSystemTheme);
+  }, []);
+
+  useEffect(() => {
+    if (!hasThemeHydrated) {
+      return;
+    }
+
+    window.localStorage.setItem(THEME_STORAGE_KEY, themeMode);
+    applyTheme(themeMode);
+  }, [hasThemeHydrated, themeMode]);
+
+  useEffect(() => {
+    if (!isThemeMenuOpen) {
+      return;
+    }
+
+    const closeThemeMenu = (event: MouseEvent) => {
+      if (!themeMenuRef.current?.contains(event.target as Node)) {
+        setIsThemeMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", closeThemeMenu);
+
+    return () => window.removeEventListener("mousedown", closeThemeMenu);
+  }, [isThemeMenuOpen]);
 
   useEffect(() => {
     if (!isMapPreviewOpen) {
@@ -141,11 +214,61 @@ export default function Home() {
           <a className="btn secondary" href="#booking">
             立即预约
           </a>
+          <div className="theme-switcher" ref={themeMenuRef}>
+            <button
+              className="theme-trigger"
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={isThemeMenuOpen}
+              onClick={() => setIsThemeMenuOpen((isOpen) => !isOpen)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  setIsThemeMenuOpen(false);
+                }
+              }}
+            >
+              <span aria-hidden="true">◐</span>
+              <span>{currentThemeLabel}</span>
+            </button>
+            {isThemeMenuOpen ? (
+              <div className="theme-menu" role="menu" aria-label="选择主题模式">
+                {themeOptions.map((option) => (
+                  <button
+                    className={option.mode === themeMode ? "is-active" : undefined}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={option.mode === themeMode}
+                    key={option.mode}
+                    onClick={() => {
+                      setThemeMode(option.mode);
+                      setIsThemeMenuOpen(false);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") {
+                        setIsThemeMenuOpen(false);
+                      }
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </nav>
       </header>
 
       <main id="top">
         <section className="hero" aria-label="沐绒宠物洗护首屏">
+          <Image
+            className="hero-media"
+            src="/assets/pet-spa-hero.png"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            aria-hidden="true"
+          />
           <div className="hero-inner">
             <div className="hero-copy">
               <p className="eyebrow">温柔洗护 · 精细护理 · 可视化服务</p>
@@ -222,18 +345,29 @@ export default function Home() {
                 className="environment-track"
                 style={{ transform: `translateX(-${active * 100}%)` }}
               >
-                {slides.map((slide) => (
-                  <figure className="environment-slide" key={slide.src}>
-                    <img src={slide.src} alt={slide.alt} />
-                    <figcaption>
-                      <div>
-                        <h3>{slide.title}</h3>
-                        <p>{slide.copy}</p>
-                      </div>
-                      <span className="environment-tag">{slide.tag}</span>
-                    </figcaption>
-                  </figure>
-                ))}
+                {slides.map((slide, index) => {
+                  const shouldPreloadSlide = index === active || index === nextSlideIndex;
+
+                  return (
+                    <figure className="environment-slide" key={slide.src}>
+                      <Image
+                        src={slide.src}
+                        alt={slide.alt}
+                        fill
+                        sizes="(max-width: 1160px) calc(100vw - 40px), 1120px"
+                        loading={shouldPreloadSlide ? "eager" : "lazy"}
+                        fetchPriority={index === active ? "high" : "low"}
+                      />
+                      <figcaption>
+                        <div>
+                          <h3>{slide.title}</h3>
+                          <p>{slide.copy}</p>
+                        </div>
+                        <span className="environment-tag">{slide.tag}</span>
+                      </figcaption>
+                    </figure>
+                  );
+                })}
               </div>
               <button
                 className="carousel-control prev"
@@ -460,11 +594,13 @@ export default function Home() {
                   onClick={() => setIsMapPreviewOpen(true)}
                   aria-label="放大查看沐绒 Pet Spa 来店地图"
                 >
-                <img
-                  className="location-map-image"
-                  src="/assets/pet-spa-location-map.png"
-                  alt="清新可爱的沐绒 Pet Spa 来店地图，门店位于长寿健康主题公园北侧、陕西北路附近"
-                />
+                  <Image
+                    className="location-map-image"
+                    src="/assets/pet-spa-location-map.png"
+                    alt="清新可爱的沐绒 Pet Spa 来店地图，门店位于长寿健康主题公园北侧、陕西北路附近"
+                    fill
+                    sizes="(max-width: 880px) calc(100vw - 76px), 520px"
+                  />
                 </button>
               </div>
             </div>
@@ -479,7 +615,13 @@ export default function Home() {
             <button className="map-lightbox-close" type="button" onClick={() => setIsMapPreviewOpen(false)} aria-label="关闭地图大图">
               ×
             </button>
-            <img src="/assets/pet-spa-location-map.png" alt="清新可爱的沐绒 Pet Spa 来店地图大图" />
+            <Image
+              src="/assets/pet-spa-location-map.png"
+              alt="清新可爱的沐绒 Pet Spa 来店地图大图"
+              width={1254}
+              height={1254}
+              sizes="(max-width: 936px) 92vw, 860px"
+            />
           </figure>
         </div>
       ) : null}
