@@ -2,16 +2,20 @@ import { BookingForm } from "./components/BookingForm";
 import { ContactInfo } from "./components/ContactInfo";
 import { EnvironmentCarousel } from "./components/EnvironmentCarousel";
 import { Hero } from "./components/Hero";
+import { LocalBusinessJsonLd } from "./components/LocalBusinessJsonLd";
 import { MapLightbox } from "./components/MapLightbox";
 import { Pricing } from "./components/Pricing";
 import { Process } from "./components/Process";
 import { Services } from "./components/Services";
+import { TestimonialsKeywordCloud } from "./components/TestimonialsKeywordCloud";
 import { ThemeSwitcher } from "./components/ThemeSwitcher";
 import { environment, navLinks, storeMap } from "./config/home";
 
 export default function Home() {
   return (
     <>
+      <LocalBusinessJsonLd />
+
       <header className="site-header">
         <nav className="nav" aria-label="主导航">
           <a className="brand" href="#top" aria-label="沐绒宠物洗护首页">
@@ -52,6 +56,8 @@ export default function Home() {
         <Process />
 
         <Pricing />
+
+        <TestimonialsKeywordCloud />
 
         <section className="booking" id="booking">
           <div className="section-inner booking-layout">

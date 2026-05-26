@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import type { ReactNode } from "react";
+import { siteSeo } from "./config/seo";
+import { getSiteUrl } from "./lib/site-url";
 import { THEME_STORAGE_KEY } from "./lib/theme";
 import "./globals.css";
 
@@ -19,8 +21,37 @@ const themeInitScript = `
 `;
 
 export const metadata: Metadata = {
-  title: "沐绒宠物洗护",
-  description: "温柔洗护、精细护理、可视化服务的宠物洗护预约页面",
+  metadataBase: getSiteUrl(),
+  title: siteSeo.title,
+  description: siteSeo.description,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: siteSeo.title,
+    description: siteSeo.description,
+    url: "/",
+    siteName: siteSeo.name,
+    locale: siteSeo.locale,
+    type: "website",
+    images: [
+      {
+        url: siteSeo.ogImage.src,
+        width: siteSeo.ogImage.width,
+        height: siteSeo.ogImage.height,
+        alt: siteSeo.ogImage.alt,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteSeo.title,
+    description: siteSeo.description,
+    images: [siteSeo.ogImage.src],
+  },
+  icons: {
+    icon: "/icon",
+  },
 };
 
 export default function RootLayout({
