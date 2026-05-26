@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Pool } from "pg";
+import { getPool } from "../../lib/db";
 
 export const runtime = "nodejs";
 
@@ -13,28 +13,6 @@ type BookingPayload = {
   appointmentTime?: string;
   message?: string;
 };
-
-let pool: Pool | undefined;
-
-function getPool() {
-  const connectionString = process.env.SESSION_DATABASE_URL;
-
-  if (!connectionString) {
-    throw new Error("SESSION_DATABASE_URL is not configured");
-  }
-
-  pool ??= new Pool({
-    connectionString,
-    max: 5,
-    connectionTimeoutMillis: 5000,
-    idleTimeoutMillis: 30000,
-    ssl: {
-      rejectUnauthorized: false,
-    },
-  });
-
-  return pool;
-}
 
 function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -101,7 +79,8 @@ export async function POST(request: Request) {
   };
 
   try {
-    const result = await getPool().query<{ id: string }>(
+    const db = await getPool();
+    const result = await db.query<{ id: string }>(
       `insert into public.appointment_bookings (
         customer_name,
         phone,
