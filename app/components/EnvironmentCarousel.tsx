@@ -18,6 +18,7 @@ type EnvironmentCarouselProps = {
 
 export function EnvironmentCarousel({ slides }: EnvironmentCarouselProps) {
   const [active, setActive] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const nextSlideIndex = (active + 1) % slides.length;
 
   const showSlide = (index: number) => {
@@ -25,15 +26,29 @@ export function EnvironmentCarousel({ slides }: EnvironmentCarouselProps) {
   };
 
   useEffect(() => {
+    if (isPaused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
     const timer = window.setInterval(() => {
       setActive((current) => (current + 1) % slides.length);
     }, 5200);
 
     return () => window.clearInterval(timer);
-  }, [slides.length]);
+  }, [isPaused, slides.length]);
 
   return (
-    <div className="environment-carousel">
+    <div
+      className="environment-carousel"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onFocus={() => setIsPaused(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setIsPaused(false);
+        }
+      }}
+    >
       <div className="environment-track" style={{ transform: `translateX(-${active * 100}%)` }}>
         {slides.map((slide, index) => {
           const shouldPreloadSlide = index === active || index === nextSlideIndex;

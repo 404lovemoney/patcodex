@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { bookingLimits, bookingOptions, businessHours } from "../config/bookings";
 import { submitBookingRequest } from "../lib/bookings";
 import { getCurrentTimeValue, getTodayDateValue } from "../lib/date-time";
@@ -8,6 +8,7 @@ import { getCurrentTimeValue, getTodayDateValue } from "../lib/date-time";
 export function BookingForm() {
   const [bookingStatus, setBookingStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [bookingMessage, setBookingMessage] = useState("");
+  const statusMessageRef = useRef<HTMLParagraphElement>(null);
   const [defaultAppointmentDate] = useState(getTodayDateValue);
   const [defaultAppointmentTime] = useState(() => {
     const currentTime = getCurrentTimeValue();
@@ -36,6 +37,12 @@ export function BookingForm() {
       setBookingMessage(error instanceof Error ? error.message : "预约提交失败，请稍后再试");
     }
   };
+
+  useEffect(() => {
+    if (bookingMessage) {
+      statusMessageRef.current?.focus();
+    }
+  }, [bookingMessage]);
 
   return (
     <form className="booking-form" onSubmit={submitBooking}>
@@ -112,7 +119,12 @@ export function BookingForm() {
           {bookingStatus === "submitting" ? "提交中..." : "提交预约"}
         </button>
         {bookingMessage ? (
-          <p className={`form-message ${bookingStatus === "error" ? "is-error" : "is-success"}`} role="status">
+          <p
+            ref={statusMessageRef}
+            className={`form-message ${bookingStatus === "error" ? "is-error" : "is-success"}`}
+            role="status"
+            tabIndex={-1}
+          >
             {bookingMessage}
           </p>
         ) : null}
