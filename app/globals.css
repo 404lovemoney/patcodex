@@ -1477,6 +1477,140 @@ textarea:focus {
   font-size: 14px;
 }
 
+.admin-page {
+  min-height: 100vh;
+  padding: 48px 0;
+  background: var(--page-bg);
+}
+
+.admin-shell {
+  width: min(1120px, calc(100% - 40px));
+  margin: 0 auto;
+}
+
+.admin-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.admin-head h1 {
+  margin-bottom: 0;
+  font-size: clamp(34px, 5vw, 56px);
+}
+
+.admin-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) minmax(150px, 0.7fr) minmax(160px, 0.7fr) auto auto;
+  gap: 12px;
+  align-items: end;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+}
+
+.admin-toolbar label {
+  display: grid;
+  gap: 7px;
+}
+
+.admin-bookings {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.admin-booking {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+}
+
+.admin-booking h2 {
+  margin: 8px 0 4px;
+  font-size: 22px;
+}
+
+.admin-booking p {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.admin-booking-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+.admin-notes {
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--surface-accent);
+}
+
+.admin-status {
+  display: inline-flex;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface-accent);
+  color: var(--mint-deep);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-status.is-cancelled {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.admin-status.is-completed {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-actions button {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-actions button:hover,
+.admin-actions button.is-active {
+  border-color: var(--mint-deep);
+  background: var(--surface-accent);
+}
+
+.admin-empty {
+  padding: 24px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  text-align: center;
+}
+
 .footer-inner {
   width: min(1120px, calc(100% - 40px));
   margin: 0 auto;
@@ -1563,6 +1697,11 @@ textarea:focus {
   }
 
   .store-map {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-toolbar,
+  .admin-booking-grid {
     grid-template-columns: 1fr;
   }
 
