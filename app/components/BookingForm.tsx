@@ -1,22 +1,25 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { bookingLimits, bookingOptions, businessHours } from "../config/bookings";
+import { bookingLimits, bookingOptions } from "../config/bookings";
 import { submitBookingRequest } from "../lib/bookings";
 import { getCurrentTimeValue, getTodayDateValue } from "../lib/date-time";
+
+const getDefaultTimeSlot = () => {
+  const currentTime = getCurrentTimeValue();
+  const nextSlot =
+    bookingOptions.timeSlots.find((slot) => slot.value >= currentTime) ||
+    bookingOptions.timeSlots[bookingOptions.timeSlots.length - 1];
+
+  return nextSlot.value;
+};
 
 export function BookingForm() {
   const [bookingStatus, setBookingStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [bookingMessage, setBookingMessage] = useState("");
   const statusMessageRef = useRef<HTMLParagraphElement>(null);
   const [defaultAppointmentDate] = useState(getTodayDateValue);
-  const [defaultAppointmentTime] = useState(() => {
-    const currentTime = getCurrentTimeValue();
-
-    return currentTime >= businessHours.opensAt && currentTime <= businessHours.closesAt
-      ? currentTime
-      : businessHours.opensAt;
-  });
+  const [defaultAppointmentTime] = useState(getDefaultTimeSlot);
 
   const submitBooking = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -94,16 +97,14 @@ export function BookingForm() {
         />
       </div>
       <div className="field">
-        <label htmlFor="appointmentTime">期望时间</label>
-        <input
-          id="appointmentTime"
-          name="appointmentTime"
-          type="time"
-          defaultValue={defaultAppointmentTime}
-          min={businessHours.opensAt}
-          max={businessHours.closesAt}
-          required
-        />
+        <label htmlFor="appointmentTime">期望时间段</label>
+        <select id="appointmentTime" name="appointmentTime" defaultValue={defaultAppointmentTime} required>
+          {bookingOptions.timeSlots.map((slot) => (
+            <option value={slot.value} key={slot.value}>
+              {slot.label}
+            </option>
+          ))}
+        </select>
       </div>
       <div className="field full">
         <label htmlFor="message">宠物情况</label>

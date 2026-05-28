@@ -1,4 +1,4 @@
-import { bookingLimits, bookingOptions, bookingRateLimit, businessHours } from "../config/bookings";
+import { bookingLimits, bookingOptions, bookingRateLimit, bookingTimeSlotValues } from "../config/bookings";
 
 type BookingPayload = {
   name?: string;
@@ -64,14 +64,10 @@ const getShanghaiDateValue = () => {
   return `${values.year}-${values.month}-${values.day}`;
 };
 
-const toMinutes = (time: string) => {
-  const [hours, minutes] = time.split(":").map(Number);
-
-  return hours * 60 + minutes;
-};
-
 const isAllowedValue = <T extends readonly string[]>(value: string, allowedValues: T): value is T[number] =>
   allowedValues.includes(value as T[number]);
+
+const isAllowedBookingTimeSlot = (value: string) => bookingTimeSlotValues.some((timeSlot) => timeSlot === value);
 
 const getClientIp = (request: Request) => {
   const forwardedFor = request.headers.get("x-forwarded-for");
@@ -168,14 +164,8 @@ export const normalizeBookingPayload = (payload: BookingPayload) => {
     return { kind: "error" as const, message: "预约日期不能早于今天" };
   }
 
-  if (parsedTime) {
-    const appointmentMinutes = toMinutes(parsedTime);
-    const openMinutes = toMinutes(businessHours.opensAt);
-    const closeMinutes = toMinutes(businessHours.closesAt);
-
-    if (appointmentMinutes < openMinutes || appointmentMinutes > closeMinutes) {
-      return { kind: "error" as const, message: "预约时间需在 10:00 - 21:00 之间" };
-    }
+  if (parsedTime && !isAllowedBookingTimeSlot(parsedTime)) {
+    return { kind: "error" as const, message: "请选择有效的预约时间段" };
   }
 
   return {

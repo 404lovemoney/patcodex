@@ -2,6 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { bookingStatuses, type BookingStatus } from "../../config/booking-statuses";
+import { getBookingTimeSlotLabel } from "../../config/bookings";
 import type { AdminBooking } from "../../lib/booking-admin";
 
 const statusLabels: Record<BookingStatus, string> = {
@@ -35,11 +36,12 @@ export function AdminBookingsClient() {
     event?.preventDefault();
     setIsLoading(true);
     setMessage("");
+    const adminToken = token.trim();
 
     try {
       const response = await fetch(`/api/admin/bookings${queryString ? `?${queryString}` : ""}`, {
         headers: {
-          "x-admin-token": token,
+          "x-admin-token": adminToken,
         },
       });
       const result = (await response.json()) as { bookings?: AdminBooking[]; error?: string };
@@ -58,13 +60,14 @@ export function AdminBookingsClient() {
 
   const updateStatus = async (id: string, nextStatus: BookingStatus) => {
     setMessage("");
+    const adminToken = token.trim();
 
     try {
       const response = await fetch(`/api/admin/bookings/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-token": token,
+          "x-admin-token": adminToken,
         },
         body: JSON.stringify({ status: nextStatus }),
       });
@@ -82,11 +85,12 @@ export function AdminBookingsClient() {
 
   const exportCsv = async () => {
     setMessage("");
+    const adminToken = token.trim();
 
     try {
       const response = await fetch(`/api/admin/bookings?${queryString ? `${queryString}&` : ""}format=csv`, {
         headers: {
-          "x-admin-token": token,
+          "x-admin-token": adminToken,
         },
       });
 
@@ -149,7 +153,7 @@ export function AdminBookingsClient() {
           <button className="btn secondary" type="submit" disabled={isLoading}>
             {isLoading ? "读取中..." : "查看预约"}
           </button>
-          <button className="btn" type="button" onClick={exportCsv} disabled={!token}>
+          <button className="btn" type="button" onClick={exportCsv} disabled={!token.trim()}>
             导出 CSV
           </button>
         </form>
@@ -167,7 +171,7 @@ export function AdminBookingsClient() {
                 <span className={`admin-status is-${booking.status}`}>{statusLabels[booking.status]}</span>
                 <h2>{booking.customerName}</h2>
                 <p>
-                  {booking.appointmentDate || "未选日期"} {booking.appointmentTime || ""}
+                  {booking.appointmentDate || "未选日期"} {getBookingTimeSlotLabel(booking.appointmentTime)}
                 </p>
               </div>
               <div className="admin-booking-grid">

@@ -4,23 +4,27 @@
 
 ## 页面展示
 
-> 展示图片位于 `docs/images`，可在上线后替换为真实页面截图。
+> 展示图片来自项目现有页面素材，统一放在 `docs/images` 目录，便于 GitHub 直接预览。
 
-### 首页
+### 首页主视觉
 
-![首页展示](docs/images/home.svg)
+![首页主视觉](docs/images/home.png)
 
-### 商品列表
+### 接待与零售休息区
 
-![商品列表展示](docs/images/product-list.svg)
+![接待与零售休息区](docs/images/reception.png)
 
-### 商品详情
+### 洗护水疗区
 
-![商品详情展示](docs/images/product-detail.svg)
+![洗护水疗区](docs/images/spa.png)
 
-### 个人中心
+### 造型与宠物休息区
 
-![个人中心展示](docs/images/profile.svg)
+![造型与宠物休息区](docs/images/styling.png)
+
+### 门店地图
+
+![门店地图](docs/images/map.png)
 
 ## 技术栈
 
