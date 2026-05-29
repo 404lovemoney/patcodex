@@ -160,11 +160,11 @@ const escapeCsvCell = (value: string | null) => {
   return /[",\n\r]/.test(cell) ? `"${cell.replaceAll('"', '""')}"` : cell;
 };
 
-const csvStatusValues: Record<BookingStatus, string> = {
-  new: "pending",
-  confirmed: "confirmed",
-  completed: "completed",
-  cancelled: "cancelled",
+const csvStatusLabels: Record<BookingStatus, string> = {
+  new: "待确认",
+  confirmed: "已确认",
+  completed: "已完成",
+  cancelled: "已取消",
 };
 
 export const bookingsToCsv = (bookings: AdminBooking[]) => {
@@ -183,10 +183,10 @@ export const bookingsToCsv = (bookings: AdminBooking[]) => {
     [
       `${booking.appointmentDate || "未选日期"} ${booking.appointmentTime || ""}`.trim(),
       booking.customerName,
-      booking.phone,
+      `\t${booking.phone}`,
       booking.petType,
       booking.serviceType,
-      csvStatusValues[booking.status],
+      csvStatusLabels[booking.status],
       booking.notes,
       booking.createdAt,
     ]
@@ -194,5 +194,5 @@ export const bookingsToCsv = (bookings: AdminBooking[]) => {
       .join(","),
   );
 
-  return [headers.join(","), ...rows].join("\n");
+  return [headers.join(","), ...rows].join("\r\n");
 };

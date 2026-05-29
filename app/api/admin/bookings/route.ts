@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     const { bookings, total } = await listBookings({ status, date, q, limit, offset });
 
     if (format === "csv") {
-      return new NextResponse(bookingsToCsv(bookings), {
+      return new NextResponse(`\uFEFF${bookingsToCsv(bookings)}`, {
         headers: {
           "Content-Type": "text/csv; charset=utf-8",
           "Content-Disposition": `attachment; filename="appointment-bookings.csv"`,
