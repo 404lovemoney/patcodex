@@ -6,7 +6,9 @@ Use `SESSION_DATABASE_URL` for local booking writes:
 
 ```env
 SESSION_DATABASE_URL="postgresql://postgres.PROJECT_REF:URL_ENCODED_PASSWORD@POOLER_HOST:5432/postgres"
-BOOKING_ADMIN_TOKEN="replace-with-a-local-admin-token"
+ADMIN_USERNAME="admin"
+ADMIN_PASSWORD="replace-with-a-local-admin-password"
+ADMIN_TOKEN="replace-with-a-local-admin-token"
 BOOKING_NOTIFICATION_WEBHOOK_URL=""
 ```
 
@@ -18,7 +20,9 @@ On Netlify, `NETLIFY=true` is provided by the platform. In that mode, `app/lib/d
 
 Set these environment variables in Netlify:
 
-- `BOOKING_ADMIN_TOKEN`: required for `/admin/bookings` and `/api/admin/bookings`.
+- `ADMIN_USERNAME`: admin login username.
+- `ADMIN_PASSWORD`: admin login password.
+- `ADMIN_TOKEN`: token returned by `/admin/login` and required by admin APIs.
 - `BOOKING_NOTIFICATION_WEBHOOK_URL`: optional webhook for successful booking notifications.
 
 ## Migrations
@@ -29,10 +33,16 @@ Supabase-compatible migrations live in `supabase/migrations/`. The Supabase tabl
 
 ## Admin Flow
 
-Open `/admin/bookings`, enter `BOOKING_ADMIN_TOKEN`, then load bookings. The page can:
+Open `/admin/login`, sign in with `ADMIN_USERNAME` and `ADMIN_PASSWORD`, then the client stores the returned token in `localStorage.booking_admin_token` and redirects to `/admin/bookings`.
 
-- filter by status and appointment date
-- mark bookings as new, confirmed, cancelled, or completed
-- export the current filtered view as CSV
+The `/admin/bookings` page can:
 
-The admin API requires the token in the `x-admin-token` header.
+- filter by status, appointment date, customer name, or phone
+- show bookings in a paginated table, 10 rows per page
+- open a detail dialog for a full booking view
+- mark bookings as confirmed, cancelled, or completed
+- export the current filtered result set as UTF-8 CSV with Excel-friendly phone values
+
+The admin API requires the token in the `Authorization: Bearer <token>` header. If an API response is 401, the client clears the local token and redirects back to `/admin/login`.
+
+The database status value for unconfirmed bookings is still `new`; the admin UI presents it as `pending` / `待确认` for operators.

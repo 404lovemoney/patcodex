@@ -20,7 +20,13 @@ This repository is a Next.js 15 application for "沐绒宠物洗护", a Chinese 
 - `app/page.tsx`: Main client-side page. Contains theme state, carousel behavior, booking form submission, map lightbox state, and all page content.
 - `app/layout.tsx`: Root layout, page metadata, global CSS import, and early theme initialization script to avoid theme flash.
 - `app/globals.css`: Full visual system, responsive layout, theme variables, carousel, booking form, map, and lightbox styles.
+- `app/admin/login/`: Admin login page. Stores the returned admin token in `localStorage.booking_admin_token`.
+- `app/admin/bookings/`: Admin booking management table with filters, pagination, detail dialog, status updates, and CSV export.
 - `app/api/bookings/route.ts`: `POST /api/bookings` endpoint. Validates form payload and inserts appointment bookings into `public.appointment_bookings`.
+- `app/api/admin/login/route.ts`: `POST /admin/login` backend target via middleware rewrite. Validates `ADMIN_USERNAME` and `ADMIN_PASSWORD`, then returns `ADMIN_TOKEN`.
+- `app/api/admin/bookings/route.ts`: Admin list and CSV export endpoint. Supports status/date/search filters plus pagination.
+- `app/api/admin/bookings/[id]/route.ts`: Admin status update endpoint.
+- `app/lib/admin-auth.ts`: Admin API Bearer token validation.
 - `app/lib/db.ts`: Database pool helper. Uses Netlify Database when `NETLIFY=true`; otherwise uses `SESSION_DATABASE_URL`.
 - `netlify/database/migrations/0001_create_appointment_bookings.sql`: Netlify Database schema for booking storage.
 - `supabase/migrations/create_appointment_bookings.sql`: Supabase-compatible schema with RLS enabled and anon/authenticated access revoked.
@@ -41,6 +47,7 @@ This repository is a Next.js 15 application for "沐绒宠物洗护", a Chinese 
 ## Environment
 
 - Local development requires `SESSION_DATABASE_URL` for booking writes.
+- Admin login requires `ADMIN_USERNAME`, `ADMIN_PASSWORD`, and `ADMIN_TOKEN`.
 - `.env.example` shows the expected variable shape.
 - `.env.local` may contain real credentials and must not be committed.
 - In Netlify, `app/lib/db.ts` calls `@netlify/database` when `process.env.NETLIFY === "true"`.
@@ -57,6 +64,17 @@ This repository is a Next.js 15 application for "沐绒宠物洗护", a Chinese 
    - time must match `HH:MM` when present.
 4. The API inserts into `public.appointment_bookings`, preserving the cleaned request as `form_payload`.
 5. Success returns `{ id }`; failures return localized Chinese error messages.
+
+## Admin Booking Flow
+
+1. The admin opens `/admin/login` and submits username/password.
+2. `POST /admin/login` is rewritten by `middleware.ts` to `/api/admin/login`.
+3. On success, the client stores `data.token` in `localStorage.booking_admin_token`.
+4. `/admin/bookings` reads that token and sends admin API requests with `Authorization: Bearer <token>`.
+5. The management page shows a table with status/date/name-or-phone filters, 10-row pagination, a detail dialog, status actions, and CSV export.
+6. Any admin API 401 clears the local token and redirects back to `/admin/login`.
+
+CSV exports are encoded as UTF-8 with a BOM for Excel, use CRLF line endings, export the current filtered result set, and prefix phone values with a tab so spreadsheet software keeps them as text.
 
 ## UI And Content Conventions
 
@@ -82,6 +100,8 @@ The booking table is `public.appointment_bookings` with:
 
 The Supabase migration enables RLS and revokes table access from `anon` and `authenticated`, which matches the current server-only insert pattern.
 
+The admin UI labels `new` as `pending` / `待确认` for operators, but the stored database value remains `new`.
+
 ## Working Safely In This Repo
 
 - There may be local user changes. Check `git status --short` before editing and avoid touching unrelated modified files.
@@ -91,9 +111,9 @@ The Supabase migration enables RLS and revokes table access from `anon` and `aut
 - If a task appears to require bulk deletion, stop and ask the user to handle it manually.
 - Prefer `rg` / `rg --files` for search when available.
 - Use `npm run lint` and `npm run build` for verification when code changes affect app behavior.
+- If a failed or interrupted build corrupts `.next`, do not bulk-delete it from automation. Either ask the user to remove it manually or run development with `NEXT_DIST_DIR=.next-dev`; `.next-dev/` is ignored by git.
 
 ## Current Observations
 
-- The repository currently has local modifications in `app/globals.css`, `app/layout.tsx`, `app/page.tsx`, and `next.config.mjs`; treat them as user-owned unless explicitly instructed otherwise.
 - The active application is not the root `index.html`; it is the Next.js app under `app/`.
 - Netlify deployment is configured by `netlify.toml` with build command `npm run build` and publish directory `.next`.

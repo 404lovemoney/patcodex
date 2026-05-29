@@ -1,6 +1,6 @@
 # 沐绒宠物洗护
 
-一个面向宠物洗护门店的 Next.js 官网与预约管理系统。项目包含品牌首页、服务展示、环境轮播、到店预约、预约入库、后台筛选、状态更新与 CSV 导出，适合部署到 Netlify 并接入 Netlify Database 或兼容 PostgreSQL 的数据库。
+一个面向宠物洗护门店的 Next.js 官网与预约管理系统。项目包含品牌首页、服务展示、环境轮播、到店预约、预约入库、后台登录、表格化预约管理、筛选分页、状态更新与 CSV 导出，适合部署到 Netlify 并接入 Netlify Database 或兼容 PostgreSQL 的数据库。
 
 ## 页面展示
 
@@ -47,7 +47,7 @@
 - 表单防护：包含基础字段校验、蜜罐字段和提交频率限制。
 - 预约入库：通过 PostgreSQL 保存预约数据，并保留原始表单 payload。
 - 通知扩展：支持配置 `BOOKING_NOTIFICATION_WEBHOOK_URL` 在预约成功后发送通知。
-- 预约后台：通过管理令牌访问 `/admin/bookings`，支持状态筛选、日期筛选、状态更新和 CSV 导出。
+- 预约后台：通过 `/admin/login` 登录后访问 `/admin/bookings`，支持状态筛选、日期筛选、客户姓名/手机号搜索、分页、状态更新、详情弹窗和 CSV 导出。
 - SEO 基础：内置 Metadata、Open Graph、Twitter Card、robots 和 sitemap。
 - 主题切换：支持浅色、深色和跟随系统偏好。
 
@@ -56,8 +56,10 @@
 ```text
 .
 ├── app
+│   ├── admin/login                # 后台登录页面
 │   ├── admin/bookings             # 预约管理后台页面
 │   ├── api/bookings               # 用户预约提交接口
+│   ├── api/admin/login            # 后台登录接口
 │   ├── api/admin/bookings         # 后台预约查询、导出与状态更新接口
 │   ├── components                 # 首页与业务组件
 │   ├── config                     # 首页文案、预约选项、SEO 配置
@@ -129,14 +131,18 @@ npm run migrate:bookings:netlify
 
 ```env
 SESSION_DATABASE_URL="postgresql://postgres.PROJECT_REF:URL_ENCODED_PASSWORD@POOLER_HOST:5432/postgres"
-BOOKING_ADMIN_TOKEN="replace-with-your-admin-token"
+ADMIN_USERNAME="admin"
+ADMIN_PASSWORD="replace-with-your-admin-password"
+ADMIN_TOKEN="replace-with-your-admin-token"
 BOOKING_NOTIFICATION_WEBHOOK_URL=""
 ```
 
 | 变量 | 必填 | 说明 |
 | --- | --- | --- |
 | `SESSION_DATABASE_URL` | 本地必填 | 本地开发时使用的 PostgreSQL 连接字符串。 |
-| `BOOKING_ADMIN_TOKEN` | 后台必填 | 访问 `/admin/bookings` 和后台 API 所需的管理令牌。 |
+| `ADMIN_USERNAME` | 后台必填 | 后台登录账号。 |
+| `ADMIN_PASSWORD` | 后台必填 | 后台登录密码。 |
+| `ADMIN_TOKEN` | 后台必填 | 登录成功后返回给前端并用于后台 API 鉴权的管理令牌。 |
 | `BOOKING_NOTIFICATION_WEBHOOK_URL` | 可选 | 预约创建成功后的通知 Webhook 地址。 |
 
 Netlify 运行时会自动提供 `NETLIFY=true`。当该变量为 `true` 时，项目会通过 `@netlify/database` 获取数据库连接字符串，不直接读取 `NETLIFY_DATABASE_URL`。
@@ -158,12 +164,14 @@ publish = ".next"
 4. 在 Netlify 环境变量中配置：
 
 ```env
-BOOKING_ADMIN_TOKEN="your-production-admin-token"
+ADMIN_USERNAME="your-admin-username"
+ADMIN_PASSWORD="your-admin-password"
+ADMIN_TOKEN="your-production-admin-token"
 BOOKING_NOTIFICATION_WEBHOOK_URL="optional-webhook-url"
 ```
 
 5. 创建并连接 Netlify Database，然后执行 `netlify/database/migrations` 中的迁移。
-6. 触发部署，部署完成后访问站点首页与 `/admin/bookings` 验证预约链路。
+6. 触发部署，部署完成后访问站点首页、`/admin/login` 与 `/admin/bookings` 验证预约链路。
 
 ### Supabase / PostgreSQL 部署
 
@@ -177,10 +185,21 @@ BOOKING_NOTIFICATION_WEBHOOK_URL="optional-webhook-url"
 ## 后台入口
 
 ```text
+/admin/login
 /admin/bookings
 ```
 
-打开后台后输入 `BOOKING_ADMIN_TOKEN`，即可查看预约记录、按状态或日期筛选、更新预约状态，并导出当前筛选结果为 CSV。
+先访问 `/admin/login` 输入管理员账号和密码。登录成功后前端会把接口返回的 token 保存到 `localStorage.booking_admin_token`，再跳转到 `/admin/bookings`。
+
+预约管理页为后台表格视图，支持：
+
+- 状态、日期、客户姓名/手机号筛选。
+- 每页 10 条分页。
+- 查看预约详情弹窗。
+- 确认预约、取消预约、标记完成。
+- 导出当前筛选结果为 Excel 友好的 UTF-8 CSV。
+
+后台 API 使用 `Authorization: Bearer <token>` 鉴权；如果返回 401，前端会清除本地 token 并跳转回登录页。
 
 ## 相关文档
 
