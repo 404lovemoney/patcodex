@@ -6,6 +6,7 @@ export type AdminBooking = {
   customerName: string;
   phone: string;
   email: string | null;
+  petName: string | null;
   petType: string | null;
   appointmentDate: string | null;
   appointmentTime: string | null;
@@ -18,6 +19,8 @@ export type AdminBooking = {
 
 const isBookingStatus = (value: string): value is BookingStatus =>
   bookingStatuses.includes(value as BookingStatus);
+
+const normalizeBookingStatus = (value: string) => (value === "pending" ? "new" : value);
 
 const mapBookingRow = (row: {
   id: string;
@@ -37,6 +40,7 @@ const mapBookingRow = (row: {
   customerName: row.customer_name,
   phone: row.phone,
   email: row.email,
+  petName: null,
   petType: row.pet_type,
   appointmentDate: row.appointment_date,
   appointmentTime: row.appointment_time,
@@ -50,13 +54,15 @@ const mapBookingRow = (row: {
 export const listBookings = async (filters: {
   status?: string;
   date?: string;
+  q?: string;
   limit?: number;
+  offset?: number;
 }) => {
   const where: string[] = [];
   const values: Array<string | number> = [];
 
-  if (filters.status && isBookingStatus(filters.status)) {
-    values.push(filters.status);
+  if (filters.status && isBookingStatus(normalizeBookingStatus(filters.status))) {
+    values.push(normalizeBookingStatus(filters.status));
     where.push(`status = $${values.length}`);
   }
 
@@ -65,10 +71,26 @@ export const listBookings = async (filters: {
     where.push(`appointment_date = $${values.length}::date`);
   }
 
-  values.push(Math.min(Math.max(filters.limit ?? 100, 1), 500));
+  if (filters.q?.trim()) {
+    values.push(`%${filters.q.trim()}%`);
+    where.push(`(customer_name ilike $${values.length} or phone ilike $${values.length})`);
+  }
+
+  const whereClause = where.length ? `where ${where.join(" and ")}` : "";
+  const limit = Math.min(Math.max(filters.limit ?? 100, 1), 500);
+  const offset = Math.max(filters.offset ?? 0, 0);
+
+  const listValues = [...values, limit, offset];
 
   const db = await getPool();
-  const result = await db.query(
+  const [countResult, result] = await Promise.all([
+    db.query<{ total: string }>(
+      `select count(*)::text as total
+      from public.appointment_bookings
+      ${whereClause}`,
+      values,
+    ),
+    db.query(
     `select
       id,
       customer_name,
@@ -83,17 +105,24 @@ export const listBookings = async (filters: {
       created_at::text as created_at,
       updated_at::text as updated_at
     from public.appointment_bookings
-    ${where.length ? `where ${where.join(" and ")}` : ""}
+    ${whereClause}
     order by appointment_date nulls last, appointment_time nulls last, created_at desc
-    limit $${values.length}`,
-    values,
-  );
+    limit $${values.length + 1}
+    offset $${values.length + 2}`,
+      listValues,
+    ),
+  ]);
 
-  return result.rows.map(mapBookingRow);
+  return {
+    bookings: result.rows.map(mapBookingRow),
+    total: Number(countResult.rows[0]?.total || 0),
+  };
 };
 
 export const updateBookingStatus = async (id: string, status: string) => {
-  if (!isBookingStatus(status)) {
+  const nextStatus = normalizeBookingStatus(status);
+
+  if (!isBookingStatus(nextStatus)) {
     return { error: "预约状态不正确" };
   }
 
@@ -115,7 +144,7 @@ export const updateBookingStatus = async (id: string, status: string) => {
       status,
       created_at::text as created_at,
       updated_at::text as updated_at`,
-    [id, status],
+    [id, nextStatus],
   );
 
   if (!result.rows[0]) {
@@ -131,36 +160,35 @@ const escapeCsvCell = (value: string | null) => {
   return /[",\n\r]/.test(cell) ? `"${cell.replaceAll('"', '""')}"` : cell;
 };
 
+const csvStatusValues: Record<BookingStatus, string> = {
+  new: "pending",
+  confirmed: "confirmed",
+  completed: "completed",
+  cancelled: "cancelled",
+};
+
 export const bookingsToCsv = (bookings: AdminBooking[]) => {
   const headers = [
-    "id",
-    "customerName",
-    "phone",
-    "email",
-    "petType",
-    "serviceType",
-    "appointmentDate",
-    "appointmentTime",
-    "status",
-    "notes",
-    "createdAt",
-    "updatedAt",
+    "预约时间",
+    "客户姓名",
+    "手机号",
+    "宠物类型",
+    "预约服务",
+    "预约状态",
+    "备注",
+    "提交时间",
   ];
 
   const rows = bookings.map((booking) =>
     [
-      booking.id,
+      `${booking.appointmentDate || "未选日期"} ${booking.appointmentTime || ""}`.trim(),
       booking.customerName,
       booking.phone,
-      booking.email,
       booking.petType,
       booking.serviceType,
-      booking.appointmentDate,
-      booking.appointmentTime,
-      booking.status,
+      csvStatusValues[booking.status],
       booking.notes,
       booking.createdAt,
-      booking.updatedAt,
     ]
       .map(escapeCsvCell)
       .join(","),

@@ -12,6 +12,7 @@ node_modules/
 
 # Build and tool output
 .next/
+.next-dev/
 dist/
 build/
 .cache/
